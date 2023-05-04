@@ -12,6 +12,12 @@ class HH:
         self.id = id
         self.params = {'employer_id': f'{self.id}', 'page': 0, 'per_page': 100}
 
+    def __str__(self):
+        return f'{self.id}'
+
+    def __repr__(self):
+        return f'Данные о работодателе с id: {self.id}'
+
     def get_request(self):
         """Метод, позволяющий запросить данные о вакансий через API и требуемые параметры"""
         try:
