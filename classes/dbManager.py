@@ -56,11 +56,10 @@ class DBManager:
                                 'vacancy_id int PRIMARY KEY, '
                                 'vacancy_name varchar(255) NOT NULL, '
                                 'employer_id int REFERENCES employers(employer_id) NOT NULL, '
-                                'area varchar(255), '
-                                'url text, '
+                                'city varchar(255),'
                                 'salary int,'
-                                'date_published timestamp,'
-                                'source text)')
+                                'url text,'
+                                'date_published timestamp)')
         finally:
             conn.close()
 
@@ -77,8 +76,8 @@ class DBManager:
                                         'VALUES(%s, %s)', data)
                     elif table_name == 'vacancies':
                         cur.executemany('INSERT INTO vacancies (vacancy_id, vacancy_name, employer_id, '
-                                        'area,  url, salary, date_published, source) '
-                                        'VALUES(%s, %s, %s, %s, %s, %s)'
+                                        'city, salary, url, date_published) '
+                                        'VALUES(%s, %s, %s, %s, %s, %s, %s)'
                                         'ON CONFLICT (vacancy_id) DO NOTHING', data)
                     else:
                         print("Такой таблицы не существует.")
