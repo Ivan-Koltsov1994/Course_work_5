@@ -70,7 +70,6 @@ class HH:
         while True:
             self.params['page'] = page
             data, info = self.get_request()
-
             for vacancy in data.get('items'):
                 if vacancy.get('salary') is not None and vacancy.get('salary').get('currency') is not None:
 
@@ -94,4 +93,9 @@ class HH:
         return vacancies
 
 # hh= HH(6)
-# print(hh.get_vacancies())
+# # HH.URL = 'https://api.hh.ru/vacancie'
+# a=hh.get_vacancies()
+# print(a[0])
+# #print(hh.get_request())
+#data, info = hh.get_request()
+#print(data)
