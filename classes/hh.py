@@ -1,35 +1,21 @@
-# Добавляем требуемые импорты
+# Делаем требуемые импорты
 import requests
+import time
 from datetime import datetime
-
 
 class HH:
     """Класс для работы с сайтом HH"""
 
-    URL = 'https://api.hh.ru/vacancies'  # Базовый URL для скачивания данных о вакансии
+    URL = 'https://api.hh.ru/vacancies'# Базовый URL для скачивания данных о вакансии
 
-    def __init__(self, job: str):
-        """Инициализируется запросом пользователя"""
-        self.job = job
-        self.par = {'text': f'{self.job}', 'page': 0, 'per_page': 100}  # Инициализируем данные по
-        # названию профессии, id региона в HH, выводим количество страниц
-
-    def __str__(self):
-        return f'{self.job}'
-
-    def __repr__(self):
-        return f'Данные о вакансии: {self.job}'
-
-    @staticmethod
-    def get_formatted_date_hh(date: str) -> str:
-        """Возвращает отформатированную дату"""
-        date_format = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S+%f").strftime("%d.%m.%Y %X")
-        return date_format
+    def __init__(self, id: int):
+        self.id = id
+        self.params = {'employer_id': f'{self.id}', 'page': 0, 'per_page': 100}
 
     def get_request(self):
         """Метод, позволяющий запросить данные о вакансий через API и требуемые параметры"""
         try:
-            response = requests.get(self.URL, self.par)
+            response = requests.get(self.URL, self.params)
             if response.status_code == 200:
                 return response.json(), 'INFO:Данные получены успешно'
             return None, f'ERROR:status_code:{response.status_code} \n'
@@ -40,42 +26,66 @@ class HH:
         except requests.exceptions.ConnectionError:
             return None, 'ERROR:requests.exceptions.ConnectionError \n'
 
-    def vacancy_info(self, data):
-        """Метод, позволяющий получать данные о вакансии в требуемом виде (для ЗП в Рублях)"""
+    @staticmethod
+    def get_formatted_date_hh(date: str) -> str:
+        """Возвращает отформатированную дату"""
+        date_format = datetime.strptime(date, "%Y-%m-%dT%H:%M:%S+%f").strftime("%d.%m.%Y %X")
+        return date_format
 
-        info = {
-            'source': 'HeadHunter',
-            'name': data['name'],
-            'url': data['alternate_url'],
-            'description': data.get('snippet').get('responsibility'),
-            'salary': data['salary'],
-            'date_published': self.get_formatted_date_hh(data['published_at']),
-            'area': data['area']['name']
-        }
-        return info
 
-    def get_vacancies_list(self) -> list:
-        """Метод, позволяющий положить данные о вакансиях в словарь"""
-        vacancy_list_rus = []  # Массив с вакансиями c ЗП в рублях
+    def get_info(self,data: dict):
+        """Метод, позволяющий получать данные о вакансии в требуемом виде (кортеж)"""
+        vacancy_id = int(data.get('id'))
+        vacancy_name = data['name']
+        employer_id = int(data.get('employer').get('id'))
+        city = data.get('area').get('name')
+        url = data.get('alternate_url')
+        data_published = self.get_formatted_date_hh(data.get('published_at'))
+
+        if 'salary' in data.keys():
+            if data.get('salary') is not None:
+                if 'from' in data.get('salary'):
+                    salary = data.get('salary').get('from')
+                else:
+                    salary = None
+            else:
+                salary = None
+        else:
+            salary = None
+
+        vacancy = (vacancy_id, vacancy_name, employer_id, city, salary, url, data_published)
+
+        return vacancy
+
+    def get_vacancies(self) -> list:
+        """Метод, позволяющий положить данные о вакансиях """
+        vacancies = []
         page = 0
-        print("Ищем требуемые вакансии..")
-
         while True:
-            self.par['page'] = page
-            data = self.get_request()[0]
+            self.params['page'] = page
+            data, info = self.get_request()
 
             for vacancy in data.get('items'):
+                if vacancy.get('salary') is not None and vacancy.get('salary').get('currency') is not None:
 
-                if vacancy.get('salary') == "RUR":
-                    vacancy_list_rus.append(self.vacancy_info(vacancy))
+                    # если зп рубли, добавляем в список, если нет, пропускаем
+                    if vacancy.get('salary').get('currency') == "RUR":
+                        vacancies.append(self.get_info(vacancy))
+                    else:
+                        continue
 
+                # если зп не указана, добавляем в список
                 else:
-                    vacancy_list_rus.append(self.vacancy_info(vacancy))
+                    vacancies.append(self.get_info(vacancy))
 
-            if len(vacancy_list_rus) >= 500:
-                break  # Прекращаем поиск при превышении длины списков в 500 позиций
+            page += 1
+            time.sleep(0.2)
 
-            else:
-                page += 1
+            # если была последняя страница, заканчиваем сбор данных
+            if data.get('pages') == page:
+                break
 
-        return vacancy_list_rus
+        return vacancies
+
+# hh= HH(6)
+# print(hh.get_vacancies())
