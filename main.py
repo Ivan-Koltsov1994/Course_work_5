@@ -111,7 +111,7 @@ def main():
 
         print('Показать еще меню? ДА/НЕТ')
         keyword_user = input().upper()
-        if keyword_user == 'yes' or keyword_user == 'да':
+        if keyword_user == 'YES' or keyword_user == 'ДА':
             continue
         else:
             print('Спасибо,что пользуетесь нашим приложением!\nХорошего дня!')
